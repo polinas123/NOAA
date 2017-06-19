@@ -1,0 +1,8 @@
+name: Publish Document
+title:
+account: rpubs
+server: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/284946/77329935facd437cbba7529ac50d3e43
+bundleId: https://api.rpubs.com/api/v1/document/284946/77329935facd437cbba7529ac50d3e43
+url: http://rpubs.com/polinas123/284946
+when: 1497860258.57415
