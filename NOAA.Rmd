@@ -1,0 +1,99 @@
+---
+title: "NOAA Storm Database Analysis"
+subtitle: "Find most damaging Meteorological events for Health and Economy"
+output: html_document
+---
+
+This analysis uses the NOAA storm database in order to answer which event type(s) cause most damage in terms of human health (both direct and indirect injuries and fatalities) and economy (both property and crops, when order of magnitude of damages was measured in Billions of US Dollars).
+For each of the events in the database, the above damages were summed. Then the event with most damage in each of the two categories was chosen. The results are listed in the Results section, and best summed up by figures 1 and 2.
+
+**The meteorological event most damaging to health was a TORNADO**
+
+**The meteorological event most damaging to the economy was a FLOOD**
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 1)
+# check dependencies:
+if (!require(data.table)){
+        install.packages("data.table")
+        require(data.table)
+}
+
+if (!require(ggplot2)){
+        install.packages("ggplot2")
+        require(ggplot2)
+}
+```
+
+## Data Processing
+data was processed in the following ways...
+```{r data_processing, cache = TRUE}
+# download data
+URL = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(url = URL, destfile = "NOAA.csv.bz2")
+# read into RAM
+dt <- fread(sprintf("bzcat %s | tr -d '\\000'", "NOAA.csv.bz2"))
+```
+
+## ANALYSIS
+
+```{r question1_INJURIES}
+setkey(dt, "EVTYPE")
+
+# select at bilions order of magnitude damages only
+# sum by event type
+injuries <- dt[, lapply(.SD, sum), by = "EVTYPE", .SDcols = "INJURIES"]
+injuries[which.max(injuries$INJURIES),]
+```
+
+```{r question2_FATALITIES}
+
+# select at bilions order of magnitude damages only
+# sum by event type
+fatalities <- dt[, lapply(.SD, sum), by = "EVTYPE", .SDcols = "FATALITIES"]
+fatalities[which.max(fatalities$FATALITIES),]
+```
+
+```{r question2_CROPDMG}
+# select at bilions order of magnitude damages only
+# sum by event type
+C_billions <- dt[CROPDMGEXP == "B", lapply(.SD, sum), by = "EVTYPE", .SDcols = "CROPDMG"]
+C_billions[which.max(C_billions$CROPDMG),]
+```
+
+```{r question2_PROPDMG}
+
+# select at bilions order of magnitude damages only
+# sum by event type
+P_billions <- dt[PROPDMGEXP == "B", lapply(.SD, sum), by = "EVTYPE", .SDcols = "PROPDMG"]
+P_billions[which.max(P_billions$PROPDMG),]
+```
+
+## RESULTS
+
+### What is the most harmful event for human health?
+
+```{r question1_ans}
+health <- merge(x = injuries, fatalities, by = "EVTYPE", all = T)
+health <- melt(health, id.vars = "EVTYPE")
+# select events with above 1000 injured or dead:
+health <- health[value > 1000,]
+
+ggplot(data = health, aes(x = EVTYPE, y = value, fill = variable)) + geom_bar(stat = 'identity', position = 'stack') + ylab("Damages to human health") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+```
+
+**Figure 1**: This figure shows how many total fatalities and injuries are recorderd for each of the event types in NOAA dataset, in cases where total amount of injuries or fatalities exceeded 1000 people (in all time periods). TORNADO causing the most injuries, and also the most fatalities.
+
+### What is the event with greatest economic consequence?
+
+```{r question2_ans}
+billions <- merge(x = C_billions, P_billions, by = "EVTYPE", all = T)
+billions <- melt(billions, id.vars = "EVTYPE")
+
+ggplot(data = billions, aes(x = EVTYPE, y = value, fill = variable)) + geom_bar(stat = 'identity', position = 'stack') + ylab("Damages in Billions of US$") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+
+```
+
+**Figure 2**: This figure shows how much total damages in property and crops are recorderd for each of the event types in NOAA dataset, for damages with order of magnitude of Billions of US dollars. It can be seen that FLOOD is the event with most damage in Billions of Dollars.
